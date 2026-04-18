@@ -1,8 +1,4 @@
-// ==========================================
-// 🛑 CONSTANTS & GLOBAL STATE
-// ==========================================
-const GEMINI_API_KEY = "AIzaSyAHgOybr_BzAgrMcZ1eixz6HSGkJ9ETAak"; // WARNING: Do not upload this key to a public repo!
-
+const WORKER_URL = "https://billowing-union-4b09.tirthpanchal131.workers.dev";
 let tasks = JSON.parse(localStorage.getItem("tasks")) || [
     { name: "Project Report", score: 10, done: false, deadline: "", impact: 5, effort: 4, progress: 0, category: "💼 Work", recurring: "None", subtasks: [] },
     { name: "Exam Study", score: 12, done: false, deadline: "", impact: 5, effort: 4, progress: 0, category: "🏠 Personal", recurring: "None", subtasks: [] }
@@ -13,9 +9,6 @@ let currentFilter = "all";
 let editingIndex = -1;
 let productivityChart;
 
-// ==========================================
-// 🚀 INITIALIZATION & CRON
-// ==========================================
 window.onload = function () {
     if ("Notification" in window && Notification.permission !== "granted" && Notification.permission !== "denied") {
         Notification.requestPermission();
@@ -364,7 +357,7 @@ function displayTasks() {
 
         let overdueTag = (isOverdue && !task.done) ? ' <span style="color:#f06a6a;font-size:11px;font-weight:bold;">⚠ Overdue</span>' : "";
         let dueSoonTag = (isDueSoon && !task.done) ? ' <span style="color:#f5c542;font-size:11px;font-weight:bold;">⏰ Due Soon</span>' : "";
-        
+
         let progressDisplay = (task.progress !== undefined) ? ` | Progress: ${task.progress}%` : "";
         let categoryDisplay = task.category ? ` | ${task.category}` : "";
         let recurringDisplay = (task.recurring && task.recurring !== "None") ? ` | 🔁 ${task.recurring}` : "";
@@ -426,7 +419,7 @@ function displayTasks() {
 
     let topTask = tasks.find(t => !t.done);
     let suggestionBox = document.getElementById("suggestion");
-    if(suggestionBox) {
+    if (suggestionBox) {
         suggestionBox.innerText = topTask ? "👉 Suggested Next Task: " + topTask.name : "✅ All tasks completed!";
     }
 }
@@ -526,77 +519,56 @@ async function askGemini() {
     if (!inputField) return;
     const userPrompt = inputField.value.trim();
     if (!userPrompt) return;
-    
+
     await getGeminiAdvice(userPrompt);
     inputField.value = "";
 }
 
 async function getGeminiAdvice(customPrompt) {
     const insightElement = document.getElementById("insight");
-
-    if (!GEMINI_API_KEY || GEMINI_API_KEY === "YOUR_GEMINI_API_KEY_HERE") {
-        insightElement.innerHTML = "<p>⚠️ Please add your Gemini API Key at the top of script.js!</p>";
-        return;
-    }
-
     const pendingTasks = tasks.filter(t => !t.done);
-    
-    // Set loading state
+
     insightElement.innerHTML = "<p>🤖 Gemini is thinking...</p>";
 
-    // Prepare a summarized list of tasks so Gemini understands the context
-    const taskDescriptions = pendingTasks.map(t => 
+    // Summarize tasks for AI context
+    const taskDescriptions = pendingTasks.map(t =>
         `- ${t.name} (Impact: ${t.impact}/5, Effort: ${t.effort}/5, Category: ${t.category}, Deadline: ${t.deadline || 'None'})`
     ).join("\n");
 
     let prompt = "";
     if (customPrompt) {
-        prompt = `
-        I have the following pending tasks:
-        ${taskDescriptions}
-        
-        The user asks: "${customPrompt}"
-        Be a helpful productivity assistant. Provide a brief 1-2 sentence response.
-        `;
+        prompt = `I have the following tasks:\n${taskDescriptions}\n\nUser Question: "${customPrompt}"\nProvide a brief 1-2 sentence response.`;
     } else {
-        prompt = `
-        I have the following pending tasks:
-        ${taskDescriptions}
-
-        Act as a highly effective productivity coach. Based on the impact, effort, and deadlines of these tasks, tell me in ONE short, motivating sentence which specific task I should focus on right now and why. Keep it brief and punchy.
-        `;
+        prompt = `I have the following tasks:\n${taskDescriptions}\n\nTell me in one short, motivating sentence which specific task I should focus on right now and why.`;
     }
 
     try {
-        const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${GEMINI_API_KEY}`, {
+        const response = await fetch(WORKER_URL, {
             method: "POST",
-            headers: {
-                "Content-Type": "application/json"
-            },
-            body: JSON.stringify({
-                contents: [{ parts: [{ text: prompt }] }]
-            })
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ prompt: prompt })
         });
 
         const data = await response.json();
-        
-        if (data.candidates && data.candidates.length > 0) {
-            const aiAdvice = data.candidates[0].content.parts[0].text.trim();
-            insightElement.innerHTML = `<p><strong>✨ Gemini:</strong> ${aiAdvice}</p>`;
+
+        // The Worker now sends { advice: "..." }
+        if (data.advice) {
+            insightElement.innerHTML = `<p><strong>✨ Gemini:</strong> ${data.advice}</p>`;
         } else {
-            throw new Error("Invalid response format from Gemini");
+            throw new Error(data.error || "Gemini could not generate a response.");
         }
+
     } catch (error) {
-        console.error("Gemini API Error:", error);
-        insightElement.innerHTML = "<p>⚠️ Oops! Couldn't connect to Gemini. Check your network or API key.</p>";
+        console.error("Cloudflare Worker Error:", error);
+        insightElement.innerHTML = "<p>⚠️ Oops! Gemini is currently unavailable. Please check your connection.</p>";
     }
 }
 
 // Add event listener to input to handle Enter key
 document.addEventListener("DOMContentLoaded", () => {
     const inputField = document.getElementById("geminiPrompt");
-    if(inputField) {
-        inputField.addEventListener("keypress", function(event) {
+    if (inputField) {
+        inputField.addEventListener("keypress", function (event) {
             if (event.key === "Enter") {
                 event.preventDefault();
                 askGemini();

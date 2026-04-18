@@ -7,7 +7,9 @@
     <title>Smart Task Prioritizer</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Outfit:wght@600;800&family=Orbitron:wght@500;700;900&family=Fira+Code:wght@400;500&display=swap" rel="stylesheet">
+    <link
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Outfit:wght@600;800&family=Orbitron:wght@500;700;900&family=Fira+Code:wght@400;500&display=swap"
+        rel="stylesheet">
     <link rel="stylesheet" href="style.css">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
@@ -19,11 +21,13 @@
         <div class="header-section">
             <div class="ai-badge">✨ AI POWERED</div>
             <h1 class="logo-text">Smart Task Prioritizer</h1>
-            <p class="subtitle">Stay organized, boost your productivity, and let the AI tell you what to focus on today</p>
+            <p class="subtitle">Stay organized, boost your productivity, and let the AI tell you what to focus on today
+            </p>
         </div>
 
         <div class="stats-banner">
-            <span id="streakDisplay">🔥 0-Day Streak!</span> <span class="separator">•</span> <span id="crushedDisplay">🏆 You've crushed 0 tasks today!</span>
+            <span id="streakDisplay">🔥 0-Day Streak!</span> <span class="separator">•</span> <span
+                id="crushedDisplay">🏆 You've crushed 0 tasks today!</span>
         </div>
 
         <div class="stats-row">
@@ -58,17 +62,21 @@
                     <span></span><span></span><span></span>
                 </div>
             </div>
-            
+
             <div class="gemini-content">
                 <div class="gemini-response" id="insight">
                     <p>📊 Avg completed task priority score: --</p>
                 </div>
-                <div class="suggestion-box" id="suggestion" style="display:none;">👉 Add tasks to see what to start with</div>
-            
+                <div class="suggestion-box" id="suggestion" style="display:none;">👉 Add tasks to see what to start with
+                </div>
+
                 <div class="prompt-suggestions">
-                    <button class="prompt-chip" onclick="setPrompt('Ways to boost your productivity')">Ways to boost your productivity</button>
-                    <button class="prompt-chip" onclick="setPrompt('What should I focus on right now?')">What should I focus on right now?</button>
-                    <button class="prompt-chip" onclick="setPrompt('Is there anything I am missing?')">Is there anything I am missing?</button>
+                    <button class="prompt-chip" onclick="setPrompt('Ways to boost your productivity')">Ways to boost
+                        your productivity</button>
+                    <button class="prompt-chip" onclick="setPrompt('What should I focus on right now?')">What should I
+                        focus on right now?</button>
+                    <button class="prompt-chip" onclick="setPrompt('Is there anything I am missing?')">Is there anything
+                        I am missing?</button>
                 </div>
 
                 <div class="chat-input-wrapper">
@@ -120,7 +128,7 @@
                     <button class="export-btn" onclick="exportCSV()">⬇ Export CSV</button>
                 </div>
             </div>
-            
+
             <ul id="taskList"></ul>
         </div>
 
