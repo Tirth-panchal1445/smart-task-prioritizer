@@ -10,13 +10,25 @@ let editingIndex = -1;
 let productivityChart;
 
 window.onload = function () {
-    if ("Notification" in window && Notification.permission !== "granted" && Notification.permission !== "denied") {
-        Notification.requestPermission();
-    }
-    checkNewDay();
-    saveStats();
-    displayTasks();
-    updateChart();
+    // 1. Initial UI check
+    if ("Notification" in window) Notification.requestPermission();
+    
+    // 2. Fetch tasks from the Cloud (Firestore)
+    window.fsGetDocs(window.fsCollection(window.db, "tasks"))
+      .then(snapshot => {
+        tasks = []; // Clear local array
+        snapshot.forEach(docSnap => {
+          // Add data + the unique Firebase ID
+          tasks.push({ id: docSnap.id, ...docSnap.data() });
+        });
+        
+        // Sort by score
+        tasks.sort((a, b) => (b.score || 0) - (a.score || 0));
+        
+        displayTasks(); 
+        if (typeof updateChart === "function") updateChart();
+      })
+      .catch(err => console.error("Firebase Load Error:", err));
 };
 
 // Check for notifications every minute
@@ -154,7 +166,16 @@ function addTask() {
     } else {
         let newTask = { name, done: false, deadline, impact, effort, progress, category, recurring, subtasks: [], notified: false };
         recalculateScore(newTask);
-        tasks.push(newTask);
+
+        // Save to Cloud instead of localStorage
+        window.fsAddDoc(window.fsCollection(window.db, "tasks"), newTask)
+          .then(docRef => {
+            newTask.id = docRef.id; // Save the cloud ID
+            tasks.push(newTask);
+            displayTasks();
+            if (typeof updateChart === "function") updateChart();
+          })
+          .catch(err => console.error("Error adding task:", err));
     }
 
     saveTasks();
@@ -225,14 +246,32 @@ function markDone(index) {
     t.progress = 100;
     recalculateScore(t);
     incrementCrushed(); // Streak update
-    saveTasks();
-    displayTasks();
+
+    if (t.id) {
+        // Tell Firebase this task is now finished
+        window.fsUpdateDoc(window.fsDoc(window.db, "tasks", t.id), { done: true })
+          .then(() => displayTasks())
+          .catch(err => console.error("Error updating cloud:", err));
+    } else {
+        displayTasks();
+    }
 }
 
 function deleteTask(index) {
-    tasks.splice(index, 1);
-    saveTasks();
-    displayTasks();
+    const task = tasks[index];
+    if (task.id) {
+        // Delete from Firebase using the unique ID
+        window.fsDeleteDoc(window.fsDoc(window.db, "tasks", task.id))
+          .then(() => {
+            tasks.splice(index, 1);
+            displayTasks();
+            if (typeof updateChart === "function") updateChart();
+          })
+          .catch(err => console.error("Error deleting from cloud:", err));
+    } else {
+        tasks.splice(index, 1);
+        displayTasks();
+    }
 }
 
 // ==========================================

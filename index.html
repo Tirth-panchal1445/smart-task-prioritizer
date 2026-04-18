@@ -134,7 +134,43 @@
 
     </div>
 
-    <script src="script.js"></script>
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+        import {
+            getFirestore, collection, getDocs, addDoc,
+            deleteDoc, updateDoc, doc, query, orderBy
+        } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+
+        // Your exact config from the screenshot
+        const firebaseConfig = {
+            apiKey: "AIzaSyD0zdlpJivcfCARaC8RxG8-Bc17RR4bDWE",
+            authDomain: "smart-task-prioritizer-fcfd5.firebaseapp.com",
+            projectId: "smart-task-prioritizer-fcfd5",
+            storageBucket: "smart-task-prioritizer-fcfd5.firebasestorage.app",
+            messagingSenderId: "649212122247",
+            appId: "1:649212122247:web:7b36bebc28833b8d5bd422"
+        };
+
+        // Initialize Firebase
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+
+        // Make tools available to your script.js
+        window.db = db;
+        window.fsCollection = collection;
+        window.fsGetDocs = getDocs;
+        window.fsAddDoc = addDoc;
+        window.fsDeleteDoc = deleteDoc;
+        window.fsUpdateDoc = updateDoc;
+        window.fsDoc = doc;
+        window.fsQuery = query;
+        window.fsOrderBy = orderBy;
+
+        // Load your logic script after Firebase is ready
+        const s = document.createElement('script');
+        s.src = 'script.js';
+        document.body.appendChild(s);
+    </script>
 
 </body>
 
