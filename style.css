@@ -1154,3 +1154,39 @@ li.done-task {
     color: var(--accent);
     box-shadow: 0 0 10px rgba(76, 201, 240, 0.2);
 }
+
+/* Dropdown/Select visibility fix */
+select {
+  background-color: #2a2a3d;        /* distinct from page bg */
+  color: #ffffff;                    /* white text */
+  border: 1px solid #6c63ff;        /* purple border - matches your theme */
+  border-radius: 8px;
+  padding: 8px 12px;
+  outline: none;
+  appearance: none;
+  -webkit-appearance: none;
+  cursor: pointer;
+}
+
+select:hover,
+select:focus {
+  border-color: #a78bfa;
+  background-color: #32324a;
+}
+
+/* Fix dropdown options background (dark mode) */
+select option {
+  background-color: #1e1e2e;
+  color: #ffffff;
+}
+
+/* AI Daily brief panel */
+.daily-brief-panel,
+.loading-panel {
+  background-color: #1e1e35;         /* slightly lighter than page */
+  border: 1px solid #6c63ff;         /* purple left accent border */
+  border-left: 4px solid #6c63ff;
+  color: #e2e8f0;                    /* always visible text */
+  opacity: 1 !important;             /* remove any opacity hiding */
+  visibility: visible !important;
+}
