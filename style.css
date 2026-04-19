@@ -1,21 +1,28 @@
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Outfit:wght@600;800&family=Orbitron:wght@500;700;900&family=Fira+Code:wght@400;500&family=Pacifico&display=swap');
 
 :root {
-    --bg-dark: #08080b;
-    --bg-surface: #100f15;
-    --bg-surface-2: #16151f;
-    --border-color: #232233;
-    --border-light: #2c2940;
-    --accent: #7c6cfc;
-    --accent-hover: #6556e0;
+    --bg-dark: #0b0f1a;
+    --bg-surface: rgba(255, 255, 255, 0.04);
+    --bg-surface-2: rgba(255, 255, 255, 0.06);
+    --border-color: rgba(255, 255, 255, 0.08);
+    --border-light: rgba(255, 255, 255, 0.12);
+    --accent: #4cc9f0;
+    --accent-hover: #38b2d8;
     --text-primary: #ffffff;
     --text-secondary: #9ca3af;
     --text-dim: #6b7280;
 
-    --green: #10b981;
-    --red: #ef4444;
-    --yellow: #f59e0b;
+    --high: #ff4d6d;
+    --medium: #f9c74f;
+    --low: #43aa8b;
+    --green: #43aa8b;
+    --red: #ff4d6d;
+    --yellow: #f9c74f;
 
+    --glow-blue: rgba(76, 201, 240, 0.35);
+    --glow-red: rgba(255, 77, 109, 0.5);
+    --glow-yellow: rgba(249, 199, 79, 0.45);
+    --glow-green: rgba(67, 170, 139, 0.45);
     --glow-purple: rgba(124, 108, 252, 0.4);
 }
 
@@ -28,9 +35,10 @@
 body {
     font-family: 'Inter', sans-serif;
     background-color: var(--bg-dark);
-    background-image: radial-gradient(circle at 50% 0%, #1a1636 0%, #08080b 40%);
+    background-image:
+        radial-gradient(ellipse at 20% 20%, rgba(76, 201, 240, 0.07) 0%, transparent 50%),
+        radial-gradient(ellipse at 80% 80%, rgba(255, 77, 109, 0.06) 0%, transparent 50%);
     background-repeat: no-repeat;
-    background-size: 100vw 100vh;
     background-attachment: fixed;
     color: var(--text-primary);
     min-height: 100vh;
@@ -48,12 +56,21 @@ body {
 
 /* Base Cards */
 .card {
-    background: var(--bg-surface);
-    border: 1px solid var(--border-color);
-    border-radius: 16px;
+    background: rgba(255, 255, 255, 0.04);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 20px;
     padding: 24px;
     position: relative;
     overflow: hidden;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 12px 40px rgba(0, 0, 0, 0.5);
 }
 
 .card-header {
@@ -84,16 +101,16 @@ body {
 }
 
 .ai-badge {
-    background: rgba(124, 108, 252, 0.1);
+    background: rgba(76, 201, 240, 0.1);
     border: 1px solid var(--accent);
-    color: #b1a9fa;
+    color: var(--accent);
     padding: 4px 14px;
     border-radius: 100px;
     font-size: 12px;
     font-weight: 600;
     letter-spacing: 1px;
     display: inline-block;
-    box-shadow: 0 0 15px var(--glow-purple);
+    box-shadow: 0 0 15px var(--glow-blue);
 }
 
 .logo-text {
@@ -151,27 +168,30 @@ body {
 
 .stat-box {
     flex: 1;
-    background: var(--bg-surface);
-    border: 1px solid var(--border-color);
-    border-radius: 12px;
+    background: rgba(255, 255, 255, 0.04);
+    backdrop-filter: blur(12px);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 16px;
     padding: 20px 15px;
     text-align: center;
     display: flex;
     flex-direction: column;
     gap: 8px;
-    transition: transform 0.2s, border-color 0.2s;
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
 }
 
 .stat-box:hover {
-    border-color: var(--border-light);
-    transform: translateY(-2px);
+    transform: translateY(-4px);
+    box-shadow: 0 0 20px var(--glow-blue);
+    border-color: var(--accent);
 }
 
 .stat-number {
-    font-family: 'Fira Code', monospace;
-    font-size: 28px;
+    font-family: 'Orbitron', monospace;
+    font-size: 26px;
     font-weight: 700;
     line-height: 1;
+    color: var(--accent);
 }
 
 .stat-label {
@@ -419,43 +439,53 @@ ul {
 }
 
 li {
-    background: var(--bg-surface-2);
-    border: 1px solid var(--border-color);
-    border-radius: 12px;
-    padding: 16px;
+    background: rgba(255, 255, 255, 0.04);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 16px;
+    padding: 18px;
     display: flex;
     justify-content: space-between;
-    align-items: center;
-    gap: 15px;
-    transition: transform 0.2s, box-shadow 0.2s;
-    position: relative;
-    overflow: hidden;
-}
-
-li::before {
-    content: '';
-    position: absolute;
-    left: 0;
-    top: 0;
-    bottom: 0;
-    width: 4px;
-}
-
-li.high::before {
-    background-color: var(--red);
-}
-
-li.medium::before {
-    background-color: var(--yellow);
-}
-
-li.low::before {
-    background-color: var(--green);
+    align-items: flex-start;
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+    animation: fadeIn 0.3s ease;
 }
 
 li:hover {
-    transform: translateX(4px);
-    border-color: var(--border-light);
+    transform: translateY(-4px);
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(8px); }
+    to   { opacity: 1; transform: translateY(0); }
+}
+
+li.high {
+    border-color: rgba(255, 77, 109, 0.35);
+    box-shadow: 0 0 16px rgba(255, 77, 109, 0.25);
+}
+
+li.high:hover {
+    box-shadow: 0 0 28px rgba(255, 77, 109, 0.5);
+}
+
+li.medium {
+    border-color: rgba(249, 199, 79, 0.3);
+    box-shadow: 0 0 16px rgba(249, 199, 79, 0.15);
+}
+
+li.medium:hover {
+    box-shadow: 0 0 28px rgba(249, 199, 79, 0.4);
+}
+
+li.low {
+    border-color: rgba(67, 170, 139, 0.3);
+    box-shadow: 0 0 16px rgba(67, 170, 139, 0.15);
+}
+
+li.low:hover {
+    box-shadow: 0 0 28px rgba(67, 170, 139, 0.4);
 }
 
 li.done-task {
@@ -492,21 +522,24 @@ li.done-task {
 }
 
 .badge-high {
-    background: rgba(239, 68, 68, 0.1);
-    color: var(--red);
-    border: 1px solid rgba(239, 68, 68, 0.2);
+    background: rgba(255, 77, 109, 0.15);
+    color: #ff4d6d;
+    border: 1px solid rgba(255, 77, 109, 0.4);
+    box-shadow: 0 0 8px rgba(255, 77, 109, 0.3);
 }
 
 .badge-medium {
-    background: rgba(245, 158, 11, 0.1);
-    color: var(--yellow);
-    border: 1px solid rgba(245, 158, 11, 0.2);
+    background: rgba(249, 199, 79, 0.12);
+    color: #f9c74f;
+    border: 1px solid rgba(249, 199, 79, 0.4);
+    box-shadow: 0 0 8px rgba(249, 199, 79, 0.25);
 }
 
 .badge-low {
-    background: rgba(16, 185, 129, 0.1);
-    color: var(--green);
-    border: 1px solid rgba(16, 185, 129, 0.2);
+    background: rgba(67, 170, 139, 0.12);
+    color: #43aa8b;
+    border: 1px solid rgba(67, 170, 139, 0.4);
+    box-shadow: 0 0 8px rgba(67, 170, 139, 0.2);
 }
 
 .task-actions {
@@ -949,4 +982,175 @@ li.done-task {
         justify-content: space-between;
         align-items: center;
     }
+}
+
+/* ===== DAILY SUMMARY BANNER ===== */
+.daily-summary-banner {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: linear-gradient(135deg, #1a1830 0%, #16151f 100%);
+  border: 1px solid #3a2fff44;
+  border-left: 4px solid #7c6cfc;
+  border-radius: 14px;
+  padding: 14px 20px;
+  margin-bottom: 18px;
+  font-size: 14px;
+  color: #e2e0ff;
+  flex-wrap: wrap;
+}
+.summary-icon { font-size: 20px; }
+#dailySummaryText { flex: 1; min-width: 180px; line-height: 1.5; }
+.focus-mode-btn {
+  background: #7c6cfc;
+  border: none;
+  color: #fff;
+  padding: 8px 18px;
+  border-radius: 100px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background 0.2s;
+}
+.focus-mode-btn:hover { background: #6a5afc; }
+
+/* ===== FOCUS MODE MODAL ===== */
+.focus-modal-overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.85);
+  z-index: 9999;
+  align-items: center;
+  justify-content: center;
+}
+.focus-modal-overlay.open { display: flex; }
+.focus-modal-box {
+  background: #100f15;
+  border: 1px solid #2e2b4a;
+  border-radius: 24px;
+  padding: 40px 36px;
+  max-width: 420px;
+  width: 90%;
+  text-align: center;
+  position: relative;
+}
+.focus-close-btn {
+  position: absolute;
+  top: 16px; right: 20px;
+  background: transparent;
+  border: none;
+  color: #9ca3af;
+  font-size: 20px;
+  cursor: pointer;
+}
+.focus-label {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 2px;
+  color: #7c6cfc;
+  margin-bottom: 12px;
+}
+.focus-task-name {
+  font-size: 22px;
+  font-weight: 700;
+  color: #fff;
+  margin-bottom: 6px;
+  line-height: 1.3;
+}
+.focus-task-meta {
+  font-size: 12px;
+  color: #9ca3af;
+  margin-bottom: 28px;
+}
+.focus-timer {
+  font-family: 'Orbitron', monospace;
+  font-size: 56px;
+  font-weight: 900;
+  color: #7c6cfc;
+  letter-spacing: 4px;
+  margin-bottom: 24px;
+}
+.focus-timer-controls { display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; }
+.focus-btn-start {
+  background: #7c6cfc; color: #fff; border: none;
+  padding: 10px 22px; border-radius: 100px; font-size: 14px;
+  font-weight: 600; cursor: pointer;
+}
+.focus-btn-pause {
+  background: transparent; color: #9ca3af;
+  border: 1px solid #2e2b4a; padding: 10px 22px;
+  border-radius: 100px; font-size: 14px; cursor: pointer;
+}
+.focus-btn-reset {
+  background: transparent; color: #9ca3af;
+  border: 1px solid #2e2b4a; padding: 10px 22px;
+  border-radius: 100px; font-size: 14px; cursor: pointer;
+}
+.focus-hint { margin-top: 20px; font-size: 13px; color: #6b7280; }
+
+/* ===== MICRO INTERACTIONS ===== */
+button:active {
+    transform: scale(0.96);
+}
+
+.add-btn {
+    background: var(--accent);
+    letter-spacing: 0.5px;
+    box-shadow: 0 0 20px rgba(76, 201, 240, 0.3);
+}
+
+.add-btn:hover {
+    background: var(--accent-hover);
+    transform: translateY(-2px);
+    box-shadow: 0 0 30px rgba(76, 201, 240, 0.5);
+}
+
+.ask-btn {
+    background: var(--accent);
+    box-shadow: 0 0 15px rgba(76, 201, 240, 0.25);
+}
+
+.ask-btn:hover {
+    background: var(--accent-hover);
+    box-shadow: 0 0 25px rgba(76, 201, 240, 0.4);
+}
+
+/* ===== GEMINI CARD GLOW ===== */
+.gemini-card {
+    border-color: rgba(76, 201, 240, 0.2);
+    box-shadow: 0 0 40px rgba(76, 201, 240, 0.06), 0 8px 32px rgba(0,0,0,0.4);
+}
+
+/* ===== DONE TASK STYLE ===== */
+li.done-task {
+    opacity: 0.45;
+    filter: grayscale(0.5);
+    box-shadow: none !important;
+}
+
+.focus-time-chip {
+    background: transparent;
+    border: 1px solid rgba(255,255,255,0.12);
+    color: #9ca3af;
+    padding: 6px 16px;
+    border-radius: 100px;
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+    font-family: 'Inter', sans-serif;
+}
+
+.focus-time-chip:hover {
+    border-color: var(--accent);
+    color: var(--accent);
+}
+
+.active-chip {
+    background: rgba(76, 201, 240, 0.15);
+    border-color: var(--accent);
+    color: var(--accent);
+    box-shadow: 0 0 10px rgba(76, 201, 240, 0.2);
 }

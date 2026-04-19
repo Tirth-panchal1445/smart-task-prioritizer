@@ -166,6 +166,13 @@
                     id="crushedDisplay">🏆 You've crushed 0 tasks today!</span>
             </div>
 
+            <!-- DAILY SUMMARY BANNER -->
+            <div class="daily-summary-banner" id="dailySummaryBanner">
+                <span class="summary-icon">📋</span>
+                <span id="dailySummaryText">Loading your day...</span>
+                <button class="focus-mode-btn" onclick="openFocusMode()">⚡ Focus Mode</button>
+            </div>
+
             <div class="stats-row">
                 <div class="stat-box">
                     <div class="stat-number" id="totalCount" style="color: #7c6cfc;">0</div>
@@ -272,6 +279,45 @@
             </div>
 
         </div> <!-- end .container -->
+
+        <!-- FOCUS MODE MODAL -->
+        <div class="focus-modal-overlay" id="focusModal">
+            <div class="focus-modal-box">
+                <button class="focus-close-btn" onclick="closeFocusMode()">✕</button>
+                <div class="focus-label">⚡ FOCUS MODE</div>
+                <div class="focus-task-name" id="focusTaskName">—</div>
+                <div class="focus-task-meta" id="focusTaskMeta"></div>
+
+                <div style="display:flex; gap:8px; justify-content:center; margin-bottom:8px; flex-wrap:wrap;">
+                    <button class="focus-time-chip active-chip" onclick="setFocusTime(25, this)">25 min</button>
+                    <button class="focus-time-chip" onclick="setFocusTime(45, this)">45 min</button>
+                    <button class="focus-time-chip" onclick="setFocusTime(60, this)">60 min</button>
+                    <button class="focus-time-chip" onclick="setFocusTime(90, this)">90 min</button>
+                </div>
+
+                <div class="focus-timer" id="focusTimerDisplay">25:00</div>
+                <div class="focus-timer-controls">
+                    <button class="focus-btn-start" onclick="startFocusTimer()">▶ Start</button>
+                    <button class="focus-btn-pause" onclick="pauseFocusTimer()">⏸ Pause</button>
+                    <button class="focus-btn-reset" onclick="resetFocusTimer()">↺ Reset</button>
+                </div>
+                <div class="focus-hint">One task. Full focus. 🧠</div>
+            </div>
+        </div>
+
+        <!-- MISSED DEADLINE MODAL -->
+        <div class="focus-modal-overlay" id="rescheduleModal">
+            <div class="focus-modal-box">
+                <div class="focus-label" style="color:#f06a6a;">⚠ Missed Deadline</div>
+                <div class="focus-task-name" id="rescheduleTaskName">—</div>
+                <div style="color:#9ca3af; font-size:14px; margin: 8px 0 20px;">This task is overdue. Reschedule
+                    automatically?</div>
+                <div class="focus-timer-controls">
+                    <button class="focus-btn-start" onclick="confirmReschedule()">✅ Yes, +1 Day</button>
+                    <button class="focus-btn-pause" onclick="closeReschedule()">❌ Dismiss</button>
+                </div>
+            </div>
+        </div>
     </div> <!-- end #appScreen -->
 
     <script type="module">

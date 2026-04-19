@@ -396,6 +396,8 @@ function displayTasks() {
     });
 
     updateDisplayCounts(tasks.length, highCount, doneCount, overdueCount);
+    updateDailySummary();
+    checkOverdueTasks();
 }
 
 function updateDisplayCounts(total, high, done, overdue) {
@@ -512,7 +514,14 @@ async function getGeminiAdvice(customPrompt) {
         const data = await res.json();
 
         if (data.advice) {
-            insightElement.innerHTML = `<p><strong>✨ Gemini:</strong> ${data.advice}</p>`;
+            insightElement.innerHTML = `
+  <div style="display:flex;gap:10px;align-items:flex-start;">
+    <span style="font-size:22px;line-height:1.3;">🤖</span>
+    <div>
+      <div style="font-size:11px;font-weight:700;letter-spacing:1.5px;color:var(--accent);margin-bottom:6px;">AI SUGGESTION</div>
+      <div style="font-size:14px;line-height:1.7;color:#e2e8f0;">${data.advice}</div>
+    </div>
+  </div>`;
         } else {
             throw new Error(data.error || "Gemini could not generate a response.");
         }
@@ -619,3 +628,156 @@ function closeSettings() {
 document.getElementById("settingsModal")?.addEventListener("click", function(e) {
     if (e.target === this) closeSettings();
 });
+
+// ==========================================
+// ⚡ FOCUS MODE
+// ==========================================
+let focusTimerInterval = null;
+let focusSecondsLeft = 25 * 60;
+let focusSelectedMinutes = 25;
+let focusPaused = true;
+let rescheduleTargetIndex = -1;
+
+function setFocusTime(minutes, btn) {
+  // Only allow changing when timer is not running
+  if (!focusPaused) return;
+  focusSecondsLeft = minutes * 60;
+  focusSelectedMinutes = minutes;
+  updateFocusTimerDisplay();
+
+  // Update active chip highlight
+  document.querySelectorAll(".focus-time-chip").forEach(b => b.classList.remove("active-chip"));
+  btn.classList.add("active-chip");
+}
+
+function openFocusMode() {
+  const topTask = tasks.find(t => !t.done);
+  if (!topTask) return alert("No pending tasks to focus on!");
+
+  document.getElementById("focusTaskName").innerText = topTask.name;
+  document.getElementById("focusTaskMeta").innerText =
+    `${topTask.category || ""} · Score: ${topTask.score}` +
+    (topTask.deadline ? ` · Due: ${new Date(topTask.deadline).toLocaleDateString()}` : "");
+
+  focusSecondsLeft = (focusSelectedMinutes || 25) * 60;
+  focusPaused = true;
+  clearInterval(focusTimerInterval);
+  updateFocusTimerDisplay();
+  document.getElementById("focusModal").classList.add("open");
+}
+
+function closeFocusMode() {
+  clearInterval(focusTimerInterval);
+  focusPaused = true;
+  document.getElementById("focusModal").classList.remove("open");
+}
+
+function updateFocusTimerDisplay() {
+  const m = String(Math.floor(focusSecondsLeft / 60)).padStart(2, "0");
+  const s = String(focusSecondsLeft % 60).padStart(2, "0");
+  document.getElementById("focusTimerDisplay").innerText = `${m}:${s}`;
+}
+
+function startFocusTimer() {
+  if (!focusPaused) return;
+  if (Notification.permission !== "granted") Notification.requestPermission();
+  focusPaused = false;
+  focusTimerInterval = setInterval(() => {
+    if (focusSecondsLeft <= 0) {
+      clearInterval(focusTimerInterval);
+      focusPaused = true;
+      document.getElementById("focusTimerDisplay").innerText = "00:00";
+
+      // 🔔 Send notification
+      const taskName = document.getElementById("focusTaskName").innerText;
+      if (Notification.permission === "granted") {
+        new Notification("⏰ Focus Session Complete!", {
+          body: `Great work on "${taskName}"! Time for a break. 🎉`,
+          icon: "https://cdn-icons-png.flaticon.com/512/190/190411.png"
+        });
+      } else {
+        alert(`🎉 Focus session done! Great work on "${taskName}". Time for a break.`);
+      }
+      return;
+    }
+    focusSecondsLeft--;
+    updateFocusTimerDisplay();
+  }, 1000);
+}
+
+function pauseFocusTimer() {
+  clearInterval(focusTimerInterval);
+  focusPaused = true;
+}
+
+function resetFocusTimer() {
+  clearInterval(focusTimerInterval);
+  focusPaused = true;
+  focusSecondsLeft = (focusSelectedMinutes || 25) * 60;
+  updateFocusTimerDisplay();
+}
+
+// ==========================================
+// 📋 DAILY SUMMARY
+// ==========================================
+function updateDailySummary() {
+  const pending = tasks.filter(t => !t.done);
+  const highPriority = pending.filter(t => t.score > 10);
+  const topTask = pending[0];
+
+  const summaryEl = document.getElementById("dailySummaryText");
+  if (!summaryEl) return;
+
+  if (!pending.length) {
+    summaryEl.innerHTML = "🎉 <strong>All tasks done!</strong> You're crushing it today.";
+    return;
+  }
+
+  const highText = highPriority.length
+    ? `You have <strong>${highPriority.length} high-priority</strong> task${highPriority.length > 1 ? "s" : ""} today.`
+    : `You have <strong>${pending.length}</strong> pending task${pending.length > 1 ? "s" : ""}.`;
+
+  const startText = topTask
+    ? ` Start with <strong>${topTask.name}</strong>.`
+    : "";
+
+  summaryEl.innerHTML = `${highText}${startText}`;
+}
+
+// ==========================================
+// ⚠ MISSED DEADLINE RECOVERY
+// ==========================================
+function checkOverdueTasks() {
+  const overdue = tasks.find(t => !t.done && t.deadline && new Date(t.deadline) < new Date());
+  if (!overdue) return;
+
+  rescheduleTargetIndex = tasks.indexOf(overdue);
+  document.getElementById("rescheduleTaskName").innerText = overdue.name;
+  document.getElementById("rescheduleModal").classList.add("open");
+}
+
+function confirmReschedule() {
+  if (rescheduleTargetIndex < 0) return;
+  const task = tasks[rescheduleTargetIndex];
+  const newDate = new Date(task.deadline);
+  newDate.setDate(newDate.getDate() + 1);
+
+  const tzoffset = newDate.getTimezoneOffset() * 60000;
+  task.deadline = new Date(newDate - tzoffset).toISOString().slice(0, 16);
+  recalculateScore(task);
+
+  if (task.id) {
+    window.fsUpdateDoc(window.fsDoc(window.db, "tasks", task.id), {
+      deadline: task.deadline, score: task.score
+    });
+  }
+
+  closeReschedule();
+  displayTasks();
+  updateDailySummary();
+}
+
+function closeReschedule() {
+  rescheduleTargetIndex = -1;
+  document.getElementById("rescheduleModal").classList.remove("open");
+}
