@@ -10,42 +10,31 @@ let editingIndex = -1;
 let productivityChart;
 
 window.onload = function () {
-    // 1. Initial UI check
     if ("Notification" in window) Notification.requestPermission();
-    
-    // 2. Fetch tasks from the Cloud (Firestore)
+
     window.fsGetDocs(window.fsCollection(window.db, "tasks"))
-      .then(snapshot => {
-        tasks = []; // Clear local array
-        snapshot.forEach(docSnap => {
-          // Add data + the unique Firebase ID
-          tasks.push({ id: docSnap.id, ...docSnap.data() });
-        });
-        
-        // Sort by score
-        tasks.sort((a, b) => (b.score || 0) - (a.score || 0));
-        
-        displayTasks(); 
-        if (typeof updateChart === "function") updateChart();
-      })
-      .catch(err => console.error("Firebase Load Error:", err));
+        .then(snapshot => {
+            tasks = [];
+            snapshot.forEach(docSnap => tasks.push({ id: docSnap.id, ...docSnap.data() }));
+            tasks.sort((a, b) => (b.score || 0) - (a.score || 0));
+
+            displayTasks();
+            if (typeof updateChart === "function") updateChart();
+        })
+        .catch(err => console.error("Firebase Load Error:", err));
 };
 
-// Check for notifications every minute
 setInterval(() => {
-    let now = new Date();
+    const now = new Date().getTime();
     tasks.forEach(task => {
         if (!task.done && task.deadline) {
-            let dueTime = new Date(task.deadline).getTime();
-            let minDiff = (dueTime - now.getTime()) / (1000 * 60);
-
-            // Trigger 30 mins before deadline
+            const minDiff = (new Date(task.deadline).getTime() - now) / 60000;
             if (minDiff > 29 && minDiff <= 30 && !task.notified) {
                 task.notified = true;
                 if (Notification.permission === "granted") {
                     new Notification("Task Due Soon! ⏰", { body: `Your task "${task.name}" is due in 30 minutes!` });
                 } else {
-                    alert(`⏰ Task Due Soon: "${task.name}" in 30 mins!`); // In-app fallback
+                    alert(`⏰ Task Due Soon: "${task.name}" in 30 mins!`);
                 }
             }
         }
@@ -53,54 +42,44 @@ setInterval(() => {
     saveTasks();
 }, 60000);
 
-// ==========================================
-// 📊 STATS & STREAK MANAGEMENT
-// ==========================================
+function getTodayDate() {
+    return new Date().toISOString().split('T')[0];
+}
+
 function checkNewDay() {
-    let todayDate = new Date().toISOString().split('T')[0];
+    const todayDate = getTodayDate();
     stats.history = stats.history || {};
 
     if (stats.lastDate !== todayDate) {
-        let yesterday = new Date();
+        const yesterday = new Date();
         yesterday.setDate(yesterday.getDate() - 1);
-        let yesterdayStr = yesterday.toISOString().split('T')[0];
+        const yesterdayStr = yesterday.toISOString().split('T')[0];
 
-        if (stats.lastDate !== yesterdayStr && stats.lastDate !== "") {
-            stats.streak = 0; // Missed a day
-        }
-
-        // Save history of the previous day before resetting
-        if (stats.lastDate && stats.crushedToday !== undefined) {
-            stats.history[stats.lastDate] = stats.crushedToday;
-        }
+        if (stats.lastDate !== yesterdayStr && stats.lastDate !== "") stats.streak = 0;
+        if (stats.lastDate && stats.crushedToday !== undefined) stats.history[stats.lastDate] = stats.crushedToday;
 
         stats.crushedToday = 0;
         stats.lastDate = todayDate;
-        stats.history[todayDate] = 0; // initialize today
-
+        stats.history[todayDate] = 0;
         saveStats();
     }
 }
 
 function incrementCrushed() {
     checkNewDay();
-    if (stats.crushedToday === 0) {
-        stats.streak += 1;
-    }
+    if (stats.crushedToday === 0) stats.streak += 1;
     stats.crushedToday += 1;
-
-    let todayDate = new Date().toISOString().split('T')[0];
-    stats.history = stats.history || {};
-    stats.history[todayDate] = stats.crushedToday;
+    stats.history[getTodayDate()] = stats.crushedToday;
 
     saveStats();
-    updateChart(); // dynamically redraw the chart when we crush a task!
+    if (typeof updateChart === "function") updateChart();
 }
 
 function saveStats() {
     localStorage.setItem("taskStats", JSON.stringify(stats));
-    let streakDisplay = document.getElementById("streakDisplay");
-    let crushedDisplay = document.getElementById("crushedDisplay");
+    const streakDisplay = document.getElementById("streakDisplay");
+    const crushedDisplay = document.getElementById("crushedDisplay");
+
     if (streakDisplay) streakDisplay.innerText = `🔥 ${stats.streak}-Day Streak!`;
     if (crushedDisplay) crushedDisplay.innerText = `🏆 You've crushed ${stats.crushedToday} tasks today!`;
 }
@@ -109,124 +88,108 @@ function saveTasks() {
     localStorage.setItem("tasks", JSON.stringify(tasks));
 }
 
-// ==========================================
-// 🧠 CORE LOGIC & TASK MANAGEMENT
-// ==========================================
 function recalculateScore(task) {
     if (task.impact !== undefined && task.effort !== undefined) {
         let urgency = 1;
         if (task.deadline) {
-            let hours = (new Date(task.deadline) - new Date()) / (1000 * 60 * 60);
+            const hours = (new Date(task.deadline) - new Date()) / 3600000;
             if (hours <= 24) urgency = 5;
             else if (hours <= 48) urgency = 4;
             else if (hours <= 72) urgency = 3;
             else if (hours <= 96) urgency = 2;
         }
 
-        let progressPercentage = (task.progress || 0) / 100;
-        let completionBoost = progressPercentage * 5;
-        let remainingEffort = task.effort * (1 - progressPercentage);
+        const progressPercent = (task.progress || 0) / 100;
+        const completionBoost = progressPercent * 5;
+        const remainingEffort = task.effort * (1 - progressPercent);
 
-        let score = (task.impact * 2) + urgency - remainingEffort + completionBoost;
-        task.score = Math.round(score * 100) / 100;
+        task.score = Math.round(((task.impact * 2) + urgency - remainingEffort + completionBoost) * 100) / 100;
     }
 }
 
-function addTask() {
-    let name = document.getElementById("task").value;
-    let deadline = document.getElementById("deadline").value;
-    let category = document.getElementById("category").value;
-    let recurring = document.getElementById("recurring").value;
-    let impact = parseInt(document.getElementById("impact").value);
-    let effort = parseInt(document.getElementById("effort").value);
-    let progress = parseInt(document.getElementById("progress").value) || 0;
+function getVal(id) {
+    return document.getElementById(id)?.value || "";
+}
 
-    if (!name || !deadline || !impact || !effort) {
-        alert("Please fill all fields!");
-        return;
-    }
+function setVal(id, val) {
+    const el = document.getElementById(id);
+    if (el) el.value = val;
+}
+
+function addTask() {
+    const name = getVal("task");
+    const deadline = getVal("deadline");
+    const category = getVal("category");
+    const recurring = getVal("recurring");
+    const impact = parseInt(getVal("impact")) || 1;
+    const effort = parseInt(getVal("effort")) || 1;
+    const progress = parseInt(getVal("progress")) || 0;
+
+    if (!name || !deadline) return alert("Please fill all fields!");
 
     if (editingIndex >= 0) {
-        let t = tasks[editingIndex];
-        t.name = name;
-        t.deadline = deadline;
-        t.impact = impact;
-        t.effort = effort;
-        t.progress = progress;
-        t.category = category;
-        t.recurring = recurring;
+        const t = tasks[editingIndex];
+        Object.assign(t, { name, deadline, impact, effort, progress, category, recurring });
         recalculateScore(t);
 
         editingIndex = -1;
-        let btn = document.querySelector(".add-btn");
+        const btn = document.querySelector(".add-btn");
         if (btn) {
             btn.innerText = "+ Add Task";
             btn.style.background = "";
         }
     } else {
-        let newTask = { name, done: false, deadline, impact, effort, progress, category, recurring, subtasks: [], notified: false };
+        const newTask = { name, done: false, deadline, impact, effort, progress, category, recurring, subtasks: [], notified: false };
         recalculateScore(newTask);
 
-        // Save to Cloud instead of localStorage
         window.fsAddDoc(window.fsCollection(window.db, "tasks"), newTask)
-          .then(docRef => {
-            newTask.id = docRef.id; // Save the cloud ID
-            tasks.push(newTask);
-            displayTasks();
-            if (typeof updateChart === "function") updateChart();
-          })
-          .catch(err => console.error("Error adding task:", err));
+            .then(docRef => {
+                newTask.id = docRef.id;
+                tasks.push(newTask);
+                displayTasks();
+                if (typeof updateChart === "function") updateChart();
+            })
+            .catch(err => console.error("Error adding task:", err));
     }
 
     saveTasks();
-
-    // Clear form
-    document.getElementById("task").value = "";
-    document.getElementById("deadline").value = "";
-    document.getElementById("impact").value = "";
-    document.getElementById("effort").value = "";
-    document.getElementById("progress").value = "";
-
+    ["task", "deadline", "impact", "effort", "progress"].forEach(id => setVal(id, ""));
     displayTasks();
 }
 
 function editTask(index) {
-    let t = tasks[index];
-    document.getElementById("task").value = t.name;
+    const t = tasks[index];
+    setVal("task", t.name);
 
-    // Formatting datetime-local requires YYYY-MM-DDTHH:mm exactly
     let dateVal = t.deadline || "";
     if (dateVal.length > 16) dateVal = dateVal.slice(0, 16);
-    document.getElementById("deadline").value = dateVal;
 
-    document.getElementById("category").value = t.category || "🏠 Personal";
-    document.getElementById("recurring").value = t.recurring || "None";
-    document.getElementById("impact").value = t.impact || 1;
-    document.getElementById("effort").value = t.effort || 1;
-    document.getElementById("progress").value = t.progress || 0;
+    setVal("deadline", dateVal);
+    setVal("category", t.category || "🏠 Personal");
+    setVal("recurring", t.recurring || "None");
+    setVal("impact", t.impact || 1);
+    setVal("effort", t.effort || 1);
+    setVal("progress", t.progress || 0);
 
     editingIndex = index;
 
-    let btn = document.querySelector(".add-btn");
+    const btn = document.querySelector(".add-btn");
     if (btn) {
         btn.innerText = "Save Changes";
         btn.style.background = "#f5a623";
     }
-    window.scrollTo(0, 0); // Scroll up to the form
+    window.scrollTo(0, 0);
 }
 
 function markDone(index) {
-    let t = tasks[index];
+    const t = tasks[index];
 
-    // Handle Recurring Task clone before marking done
     if (t.recurring && t.recurring !== "None" && t.deadline) {
-        let newDate = new Date(t.deadline);
-        if (t.recurring === "Daily") newDate.setDate(newDate.getDate() + 1);
-        if (t.recurring === "Weekly") newDate.setDate(newDate.getDate() + 7);
+        const newDate = new Date(t.deadline);
+        newDate.setDate(newDate.getDate() + (t.recurring === "Daily" ? 1 : 7));
 
-        // Convert to local YYYY-MM-DDTHH:mm
-        let tzoffset = newDate.getTimezoneOffset() * 60000;
-        let localISOTime = (new Date(newDate - tzoffset)).toISOString().slice(0, 16);
+        const tzoffset = newDate.getTimezoneOffset() * 60000;
+        const localISOTime = new Date(newDate - tzoffset).toISOString().slice(0, 16);
 
         tasks.push({
             name: t.name,
@@ -245,50 +208,42 @@ function markDone(index) {
     t.done = true;
     t.progress = 100;
     recalculateScore(t);
-    incrementCrushed(); // Streak update
+    incrementCrushed();
 
-    if (t.id) {
-        // Tell Firebase this task is now finished
-        window.fsUpdateDoc(window.fsDoc(window.db, "tasks", t.id), { done: true })
-          .then(() => displayTasks())
-          .catch(err => console.error("Error updating cloud:", err));
-    } else {
-        displayTasks();
-    }
+    const updateCloud = t.id
+        ? window.fsUpdateDoc(window.fsDoc(window.db, "tasks", t.id), { done: true })
+        : Promise.resolve();
+
+    updateCloud.then(() => displayTasks()).catch(err => console.error("Error updating cloud:", err));
 }
 
 function deleteTask(index) {
     const task = tasks[index];
-    if (task.id) {
-        // Delete from Firebase using the unique ID
-        window.fsDeleteDoc(window.fsDoc(window.db, "tasks", task.id))
-          .then(() => {
-            tasks.splice(index, 1);
-            displayTasks();
-            if (typeof updateChart === "function") updateChart();
-          })
-          .catch(err => console.error("Error deleting from cloud:", err));
-    } else {
+    const afterDelete = () => {
         tasks.splice(index, 1);
         displayTasks();
+        if (typeof updateChart === "function") updateChart();
+    };
+
+    if (task.id) {
+        window.fsDeleteDoc(window.fsDoc(window.db, "tasks", task.id))
+            .then(afterDelete)
+            .catch(err => console.error("Error deleting from cloud:", err));
+    } else {
+        afterDelete();
     }
 }
 
-// ==========================================
-// 🔗 SUBTASKS LOGIC
-// ==========================================
 function toggleExpand(index) {
-    let el = document.getElementById(`subtasks-${index}`);
-    if (el) {
-        el.style.display = el.style.display === "none" ? "block" : "none";
-    }
+    const el = document.getElementById(`subtasks-${index}`);
+    if (el) el.style.display = el.style.display === "none" ? "block" : "none";
 }
 
 function addSubtask(e, index) {
     e.stopPropagation();
-    let input = document.getElementById(`subtask-input-${index}`);
-    if (input && input.value.trim() !== "") {
-        if (!tasks[index].subtasks) tasks[index].subtasks = [];
+    const input = document.getElementById(`subtask-input-${index}`);
+    if (input && input.value.trim()) {
+        tasks[index].subtasks = tasks[index].subtasks || [];
         tasks[index].subtasks.push({ name: input.value.trim(), done: false });
         recalculateProgressFromSubtasks(index);
     }
@@ -296,115 +251,87 @@ function addSubtask(e, index) {
 
 function toggleSubtask(e, taskIndex, subIndex) {
     e.stopPropagation();
-    tasks[taskIndex].subtasks[subIndex].done = !tasks[taskIndex].subtasks[subIndex].done;
+    const subtask = tasks[taskIndex].subtasks[subIndex];
+    subtask.done = !subtask.done;
     recalculateProgressFromSubtasks(taskIndex);
 }
 
 function recalculateProgressFromSubtasks(index) {
-    let total = tasks[index].subtasks.length;
-    let doneSub = tasks[index].subtasks.filter(s => s.done).length;
+    const task = tasks[index];
+    const total = task.subtasks.length;
     if (total > 0) {
-        tasks[index].progress = Math.round((doneSub / total) * 100);
+        const doneSub = task.subtasks.filter(s => s.done).length;
+        task.progress = Math.round((doneSub / total) * 100);
     }
-    recalculateScore(tasks[index]);
+    recalculateScore(task);
     saveTasks();
     displayTasks();
-    // Keep it expanded after re-render by doing a tiny timeout
     setTimeout(() => {
-        let el = document.getElementById(`subtasks-${index}`);
+        const el = document.getElementById(`subtasks-${index}`);
         if (el) el.style.display = "block";
     }, 10);
 }
 
-// ==========================================
-// 🎨 UI RENDERING
-// ==========================================
 function displayTasks() {
-    // Dynamically update scores before sorting
     tasks.forEach(t => { if (!t.done) recalculateScore(t); });
 
     tasks.sort((a, b) => {
-        if (a.done && !b.done) return 1;
-        if (!a.done && b.done) return -1;
+        if (a.done !== b.done) return a.done ? 1 : -1;
         return b.score - a.score;
     });
 
-    let list = document.getElementById("taskList");
+    const list = document.getElementById("taskList");
     if (!list) return;
     list.innerHTML = "";
 
-    let total = tasks.length;
-    let highCount = 0;
-    let doneCount = 0;
-    let overdueCount = 0;
+    let highCount = 0, doneCount = 0, overdueCount = 0;
 
-    let filtered = tasks.filter(task => {
-        let isOverdue = false;
-        if (task.deadline) {
-            isOverdue = (new Date(task.deadline) - new Date()) < 0;
-        }
+    const filtered = tasks.filter(task => {
+        const isOverdue = task.deadline && (new Date(task.deadline) < new Date());
         if (currentFilter === "high") return task.score > 10 && !task.done;
         if (currentFilter === "done") return task.done;
         if (currentFilter === "overdue") return isOverdue && !task.done;
-        if (["🏠 Personal", "💼 Work", "🛒 Errands"].includes(currentFilter)) {
-            return task.category === currentFilter;
-        }
-        return true; // "all"
+        if (["🏠 Personal", "💼 Work", "🛒 Errands"].includes(currentFilter)) return task.category === currentFilter;
+        return true;
     });
 
-    if (filtered.length === 0) {
+    if (!filtered.length) {
         list.innerHTML = '<p class="empty-msg" style="text-align:center; padding:10px; color:#888;">No tasks found.</p>';
+        setTimeout(() => updateDisplayCounts(tasks.length, highCount, doneCount, overdueCount), 0);
+        return;
     }
 
-    tasks.forEach((task, index) => {
-        let priority = "";
-        let badgeClass = "";
-        let liClass = "";
-
-        if (task.score > 10) {
-            priority = "🔴 High";
-            badgeClass = "badge-high";
-            liClass = "high";
-            if (!task.done) highCount++;
-        } else if (task.score > 6) {
-            priority = "🟡 Medium";
-            badgeClass = "badge-medium";
-            liClass = "medium";
-        } else {
-            priority = "🟢 Low";
-            badgeClass = "badge-low";
-            liClass = "low";
-        }
-
+    filtered.forEach(task => {
+        const index = tasks.indexOf(task);
         if (task.done) doneCount++;
 
-        let isOverdue = false;
-        let isDueSoon = false;
+        let isOverdue = false, isDueSoon = false;
         if (task.deadline) {
-            let hoursDiff = (new Date(task.deadline) - new Date()) / (1000 * 60 * 60);
+            const hoursDiff = (new Date(task.deadline) - new Date()) / 3600000;
             isOverdue = hoursDiff < 0;
             isDueSoon = hoursDiff >= 0 && hoursDiff <= 24;
         }
 
         if (isOverdue && !task.done) overdueCount++;
 
-        // Filter rendering skip
-        if (!filtered.includes(task)) return;
+        const isHigh = task.score > 10;
+        const isMed = task.score > 6;
 
-        let li = document.createElement("li");
-        li.className = liClass + (task.done ? " done-task" : "");
+        if (isHigh && !task.done) highCount++;
 
-        let overdueTag = (isOverdue && !task.done) ? ' <span style="color:#f06a6a;font-size:11px;font-weight:bold;">⚠ Overdue</span>' : "";
-        let dueSoonTag = (isDueSoon && !task.done) ? ' <span style="color:#f5c542;font-size:11px;font-weight:bold;">⏰ Due Soon</span>' : "";
+        const li = document.createElement("li");
+        li.className = `${isHigh ? "high" : isMed ? "medium" : "low"} ${task.done ? "done-task" : ""}`;
+        li.style.cssText = "display: flex; justify-content: space-between; align-items: flex-start;";
 
-        let progressDisplay = (task.progress !== undefined) ? ` | Progress: ${task.progress}%` : "";
-        let categoryDisplay = task.category ? ` | ${task.category}` : "";
-        let recurringDisplay = (task.recurring && task.recurring !== "None") ? ` | 🔁 ${task.recurring}` : "";
+        const overdueTag = (isOverdue && !task.done) ? ' <span style="color:#f06a6a;font-size:11px;font-weight:bold;">⚠ Overdue</span>' : "";
+        const dueSoonTag = (isDueSoon && !task.done) ? ' <span style="color:#f5c542;font-size:11px;font-weight:bold;">⏰ Due Soon</span>' : "";
+        const progressDisplay = task.progress !== undefined ? ` | Progress: ${task.progress}%` : "";
+        const catDisplay = task.category ? ` | ${task.category}` : "";
+        const recDisplay = (task.recurring && task.recurring !== "None") ? ` | 🔁 ${task.recurring}` : "";
 
-        // Subtasks HTML Generation
         let subtasksHtml = "";
         if (!task.done) {
-            let stList = (task.subtasks || []).map((st, i) => `
+            const stList = (task.subtasks || []).map((st, i) => `
                 <div style="font-size: 13px; display:flex; align-items:center; gap:5px; margin-top:4px;">
                     <input type="checkbox" ${st.done ? 'checked' : ''} onclick="toggleSubtask(event, ${index}, ${i})">
                     <span style="${st.done ? 'text-decoration:line-through;color:#aaa;' : ''}">${st.name}</span>
@@ -428,12 +355,14 @@ function displayTasks() {
                     ${task.name} ${overdueTag} ${dueSoonTag} <span style="font-size: 10px; color: #888;">(Click to see checklist)</span>
                 </div>
                 <div class="task-meta">
-                    Score: ${task.score}${progressDisplay}${categoryDisplay}${recurringDisplay}
+                    Score: ${task.score}${progressDisplay}${catDisplay}${recDisplay}
                 </div>
                 ${subtasksHtml}
             </div>
             <div class="task-actions">
-                <span class="priority-badge ${badgeClass}" style="margin-bottom: 5px;">${priority}</span>
+                <span class="priority-badge ${isHigh ? 'badge-high' : isMed ? 'badge-medium' : 'badge-low'}" style="margin-bottom: 5px;">
+                    ${isHigh ? '🔴 High' : isMed ? '🟡 Medium' : '🟢 Low'}
+                </span>
                 <div class="task-buttons">
                     ${!task.done ? `
                         <button class="btn-edit" onclick="editTask(${index})">✏️ Edit</button>
@@ -443,23 +372,22 @@ function displayTasks() {
                 </div>
             </div>
         `;
-
-        li.style.display = "flex";
-        li.style.justifyContent = "space-between";
-        li.style.alignItems = "flex-start";
-
         list.appendChild(li);
     });
 
-    document.getElementById("totalCount").innerText = total;
-    document.getElementById("highCount").innerText = highCount;
-    document.getElementById("doneCount").innerText = doneCount;
-    document.getElementById("overdueCount").innerText = overdueCount;
+    updateDisplayCounts(tasks.length, highCount, doneCount, overdueCount);
+}
 
-    let topTask = tasks.find(t => !t.done);
-    let suggestionBox = document.getElementById("suggestion");
+function updateDisplayCounts(total, high, done, overdue) {
+    ['totalCount', 'highCount', 'doneCount', 'overdueCount'].forEach((id, i) => {
+        const el = document.getElementById(id);
+        if (el) el.innerText = [total, high, done, overdue][i];
+    });
+
+    const suggestionBox = document.getElementById("suggestion");
     if (suggestionBox) {
-        suggestionBox.innerText = topTask ? "👉 Suggested Next Task: " + topTask.name : "✅ All tasks completed!";
+        const topTask = tasks.find(t => !t.done);
+        suggestionBox.innerText = topTask ? `👉 Suggested Next Task: ${topTask.name}` : "✅ All tasks completed!";
     }
 }
 
@@ -469,25 +397,18 @@ function filterTasks(value) {
 }
 
 function updateChart() {
-    let ctx = document.getElementById('productivityChart');
+    const ctx = document.getElementById('productivityChart');
     if (!ctx) return;
 
-    let labels = [];
-    let data = [];
-
+    const labels = [], data = [];
     stats.history = stats.history || {};
-    let todayDate = new Date().toISOString().split('T')[0];
-    stats.history[todayDate] = stats.crushedToday || 0;
+    stats.history[getTodayDate()] = stats.crushedToday || 0;
 
     for (let i = 6; i >= 0; i--) {
-        let d = new Date();
+        const d = new Date();
         d.setDate(d.getDate() - i);
-        let dateStr = d.toISOString().split('T')[0];
-
-        // Format label like "Mon", "Tue"
-        let displayStr = d.toLocaleDateString('en-US', { weekday: 'short' });
-        labels.push(displayStr);
-        data.push(stats.history[dateStr] || 0);
+        labels.push(d.toLocaleDateString('en-US', { weekday: 'short' }));
+        data.push(stats.history[d.toISOString().split('T')[0]] || 0);
     }
 
     if (productivityChart) {
@@ -495,14 +416,14 @@ function updateChart() {
         productivityChart.data.datasets[0].data = data;
         productivityChart.update();
     } else {
-        Chart.defaults.color = '#9ca3af'; // Make chart text dark mode friendly
+        Chart.defaults.color = '#9ca3af';
         productivityChart = new Chart(ctx, {
             type: 'line',
             data: {
-                labels: labels,
+                labels,
                 datasets: [{
                     label: 'Tasks Crushed',
-                    data: data,
+                    data,
                     borderColor: '#7c6cfc',
                     backgroundColor: 'rgba(124, 108, 252, 0.2)',
                     borderWidth: 2,
@@ -513,105 +434,73 @@ function updateChart() {
             options: {
                 responsive: true,
                 maintainAspectRatio: false,
-                scales: {
-                    y: {
-                        beginAtZero: true,
-                        ticks: { stepSize: 1, precision: 0 }
-                    }
-                },
-                plugins: {
-                    legend: { display: false },
-                    title: {
-                        display: true,
-                        text: '7-Day Productivity Trend'
-                    }
-                }
+                scales: { y: { beginAtZero: true, ticks: { stepSize: 1, precision: 0 } } },
+                plugins: { legend: { display: false }, title: { display: true, text: '7-Day Productivity Trend' } }
             }
         });
     }
 }
 
-// ==========================================
-// ⬇ UTILITIES
-// ==========================================
 function exportCSV() {
-    let csv = "Name,Score,Status,Category\n";
-    tasks.forEach(t => {
-        csv += `${t.name},${t.score},${t.done ? "Done" : "Pending"},${t.category || ""}\n`;
-    });
-    let blob = new Blob([csv], { type: "text/csv" });
-    let a = document.createElement("a");
-    a.href = URL.createObjectURL(blob);
+    const csv = ["Name,Score,Status,Category", ...tasks.map(t => `${t.name},${t.score},${t.done ? "Done" : "Pending"},${t.category || ""}`)].join("\n");
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(new Blob([csv], { type: "text/csv" }));
     a.download = "tasks.csv";
     a.click();
 }
 
-// ==========================================
-// 🤖 GEMINI AI INTEGRATION
-// ==========================================
 function setPrompt(text) {
-    document.getElementById("geminiPrompt").value = text;
+    const el = document.getElementById("geminiPrompt");
+    if (el) el.value = text;
 }
 
 async function askGemini() {
     const inputField = document.getElementById("geminiPrompt");
-    if (!inputField) return;
-    const userPrompt = inputField.value.trim();
-    if (!userPrompt) return;
+    const prompt = inputField?.value.trim();
+    if (!prompt) return;
 
-    await getGeminiAdvice(userPrompt);
+    await getGeminiAdvice(prompt);
     inputField.value = "";
 }
 
 async function getGeminiAdvice(customPrompt) {
     const insightElement = document.getElementById("insight");
-    const pendingTasks = tasks.filter(t => !t.done);
+    if (!insightElement) return;
 
     insightElement.innerHTML = "<p>🤖 Gemini is thinking...</p>";
 
-    // Summarize tasks for AI context
-    const taskDescriptions = pendingTasks.map(t =>
-        `- ${t.name} (Impact: ${t.impact}/5, Effort: ${t.effort}/5, Category: ${t.category}, Deadline: ${t.deadline || 'None'})`
-    ).join("\n");
+    const taskContext = tasks.filter(t => !t.done)
+        .map(t => `- ${t.name} (Impact: ${t.impact}/5, Effort: ${t.effort}/5, Category: ${t.category}, Deadline: ${t.deadline || 'None'})`)
+        .join("\n");
 
-    let prompt = "";
-    if (customPrompt) {
-        prompt = `I have the following tasks:\n${taskDescriptions}\n\nUser Question: "${customPrompt}"\nProvide a brief 1-2 sentence response.`;
-    } else {
-        prompt = `I have the following tasks:\n${taskDescriptions}\n\nTell me in one short, motivating sentence which specific task I should focus on right now and why.`;
-    }
+    const prompt = customPrompt
+        ? `I have the following tasks:\n${taskContext}\n\nUser Question: "${customPrompt}"\nProvide a brief 1-2 sentence response.`
+        : `I have the following tasks:\n${taskContext}\n\nTell me in one short, motivating sentence which specific task I should focus on right now and why.`;
 
     try {
-        const response = await fetch(WORKER_URL, {
+        const res = await fetch(WORKER_URL, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ prompt: prompt })
+            body: JSON.stringify({ prompt })
         });
+        const data = await res.json();
 
-        const data = await response.json();
-
-        // The Worker now sends { advice: "..." }
         if (data.advice) {
             insightElement.innerHTML = `<p><strong>✨ Gemini:</strong> ${data.advice}</p>`;
         } else {
             throw new Error(data.error || "Gemini could not generate a response.");
         }
-
     } catch (error) {
         console.error("Cloudflare Worker Error:", error);
         insightElement.innerHTML = "<p>⚠️ Oops! Gemini is currently unavailable. Please check your connection.</p>";
     }
 }
 
-// Add event listener to input to handle Enter key
 document.addEventListener("DOMContentLoaded", () => {
-    const inputField = document.getElementById("geminiPrompt");
-    if (inputField) {
-        inputField.addEventListener("keypress", function (event) {
-            if (event.key === "Enter") {
-                event.preventDefault();
-                askGemini();
-            }
-        });
-    }
+    document.getElementById("geminiPrompt")?.addEventListener("keypress", e => {
+        if (e.key === "Enter") {
+            e.preventDefault();
+            askGemini();
+        }
+    });
 });
