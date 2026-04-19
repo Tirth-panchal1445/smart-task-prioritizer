@@ -139,6 +139,13 @@ function addTask() {
         Object.assign(t, { name, deadline, impact, effort, progress, category, recurring });
         recalculateScore(t);
 
+        // ✅ Save updated task to Firebase if it has a Firestore ID
+        if (t.id) {
+            window.fsUpdateDoc(window.fsDoc(window.db, "tasks", t.id), {
+                name, deadline, impact, effort, progress, category, recurring, score: t.score
+            }).catch(err => console.error("Error updating task in Firebase:", err));
+        }
+
         editingIndex = -1;
         const btn = document.querySelector(".add-btn");
         if (btn) {
