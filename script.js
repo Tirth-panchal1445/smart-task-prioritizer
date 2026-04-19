@@ -571,3 +571,44 @@ document.addEventListener("DOMContentLoaded", () => {
         }
     });
 });
+
+// ======= SIDEBAR & SETTINGS =======
+
+function toggleSidebar() {
+    document.getElementById("sidebar").classList.toggle("open");
+    document.getElementById("sidebarOverlay").classList.toggle("open");
+}
+
+function closeSidebar() {
+    document.getElementById("sidebar").classList.remove("open");
+    document.getElementById("sidebarOverlay").classList.remove("open");
+}
+
+function openSettings() {
+    const user = window.currentUser;
+    if (!user) return;
+
+    const email = user.email || "—";
+    const initial = email.charAt(0).toUpperCase();
+
+    // Fill sidebar
+    document.getElementById("sidebarAvatar").innerText = initial;
+    document.getElementById("sidebarName").innerText = email.split("@")[0];
+    document.getElementById("sidebarEmail").innerText = email;
+
+    // Fill modal
+    document.getElementById("modalAvatar").innerText = initial;
+    document.getElementById("modalName").innerText = email.split("@")[0];
+    document.getElementById("modalEmail").innerText = email;
+
+    document.getElementById("settingsModal").classList.add("open");
+}
+
+function closeSettings() {
+    document.getElementById("settingsModal").classList.remove("open");
+}
+
+// Close modal if clicking outside the box
+document.getElementById("settingsModal")?.addEventListener("click", function(e) {
+    if (e.target === this) closeSettings();
+});

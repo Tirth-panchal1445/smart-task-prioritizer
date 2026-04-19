@@ -16,150 +16,263 @@
 
 <body>
 
-<!-- AUTH SCREEN -->
-<div id="authScreen" style="display:flex; flex-direction:column; align-items:center; justify-content:center; min-height:100vh; padding:20px;">
-    <h1 style="font-family:'Pacifico',cursive; font-size:48px; background:linear-gradient(135deg,#fff 10%,#a78bfa 100%); -webkit-background-clip:text; -webkit-text-fill-color:transparent; margin-bottom:8px;">Priorify</h1>
-    <p style="color:#9ca3af; margin-bottom:30px; font-size:14px;">Sign in to manage your tasks</p>
+    <!-- AUTH SCREEN -->
+    <div id="authScreen"
+        style="display:flex; flex-direction:column; align-items:center; justify-content:center; min-height:100vh; padding:20px;">
+        <h1
+            style="font-family:'Pacifico',cursive; font-size:48px; background:linear-gradient(135deg,#fff 10%,#a78bfa 100%); -webkit-background-clip:text; -webkit-text-fill-color:transparent; margin-bottom:8px;">
+            Priorify</h1>
+        <p style="color:#9ca3af; margin-bottom:30px; font-size:14px;">Sign in to manage your tasks</p>
 
-    <div style="background:#100f15; border:1px solid #232233; border-radius:16px; padding:28px; width:100%; max-width:400px; display:flex; flex-direction:column; gap:14px;">
-        <div id="authToggleBtns" style="display:flex; gap:8px; margin-bottom:4px;">
-            <button onclick="showLogin()" id="loginTabBtn" style="flex:1; padding:10px; border-radius:8px; border:none; background:#7c6cfc; color:#fff; font-weight:600; cursor:pointer;">Login</button>
-            <button onclick="showRegister()" id="registerTabBtn" style="flex:1; padding:10px; border-radius:8px; border:1px solid #232233; background:transparent; color:#9ca3af; font-weight:600; cursor:pointer;">Register</button>
+        <div
+            style="background:#100f15; border:1px solid #232233; border-radius:16px; padding:28px; width:100%; max-width:400px; display:flex; flex-direction:column; gap:14px;">
+            <div id="authToggleBtns" style="display:flex; gap:8px; margin-bottom:4px;">
+                <button onclick="showLogin()" id="loginTabBtn"
+                    style="flex:1; padding:10px; border-radius:8px; border:none; background:#7c6cfc; color:#fff; font-weight:600; cursor:pointer;">Login</button>
+                <button onclick="showRegister()" id="registerTabBtn"
+                    style="flex:1; padding:10px; border-radius:8px; border:1px solid #232233; background:transparent; color:#9ca3af; font-weight:600; cursor:pointer;">Register</button>
+            </div>
+
+            <div id="registerNameField" style="display:none;">
+                <input id="authName" type="text" placeholder="Your Name"
+                    style="width:100%; padding:12px 14px; background:#16151f; border:1px solid #232233; border-radius:10px; color:#fff; font-size:14px; font-family:'Inter',sans-serif; outline:none;">
+            </div>
+            <input id="authEmail" type="email" placeholder="Email address"
+                style="padding:12px 14px; background:#16151f; border:1px solid #232233; border-radius:10px; color:#fff; font-size:14px; font-family:'Inter',sans-serif; outline:none; width:100%;">
+            <input id="authPassword" type="password" placeholder="Password"
+                style="padding:12px 14px; background:#16151f; border:1px solid #232233; border-radius:10px; color:#fff; font-size:14px; font-family:'Inter',sans-serif; outline:none; width:100%;">
+
+            <button id="authSubmitBtn" onclick="handleAuth()"
+                style="padding:13px; background:#7c6cfc; color:#fff; border:none; border-radius:10px; font-size:14px; font-weight:600; cursor:pointer; font-family:'Inter',sans-serif;">Sign
+                In</button>
+            <p id="authError" style="color:#ef4444; font-size:13px; text-align:center; display:none;"></p>
         </div>
-
-        <div id="registerNameField" style="display:none;">
-            <input id="authName" type="text" placeholder="Your Name" style="width:100%; padding:12px 14px; background:#16151f; border:1px solid #232233; border-radius:10px; color:#fff; font-size:14px; font-family:'Inter',sans-serif; outline:none;">
-        </div>
-        <input id="authEmail" type="email" placeholder="Email address" style="padding:12px 14px; background:#16151f; border:1px solid #232233; border-radius:10px; color:#fff; font-size:14px; font-family:'Inter',sans-serif; outline:none; width:100%;">
-        <input id="authPassword" type="password" placeholder="Password" style="padding:12px 14px; background:#16151f; border:1px solid #232233; border-radius:10px; color:#fff; font-size:14px; font-family:'Inter',sans-serif; outline:none; width:100%;">
-
-        <button id="authSubmitBtn" onclick="handleAuth()" style="padding:13px; background:#7c6cfc; color:#fff; border:none; border-radius:10px; font-size:14px; font-weight:600; cursor:pointer; font-family:'Inter',sans-serif;">Sign In</button>
-        <p id="authError" style="color:#ef4444; font-size:13px; text-align:center; display:none;"></p>
     </div>
-</div>
 
-<!-- MAIN APP -->
-<div id="appScreen" style="display:none;">
+    <!-- MAIN APP -->
+    <div id="appScreen" style="display:none;">
 
-    <div class="container">
+        <!-- SIDEBAR TOGGLE BUTTON -->
+        <button class="sidebar-toggle" onclick="toggleSidebar()">☰</button>
 
-        <div class="header-section">
-            <div class="ai-badge">✨ AI POWERED</div>
-            <h1 class="logo-text">Priorify</h1>
-            <p class="subtitle">Stay organized, boost your productivity, and let the AI tell you what to focus on today
-            </p>
-            <button onclick="logoutUser()" style="margin-top:4px; background:transparent; border:1px solid #232233; color:#9ca3af; padding:7px 18px; border-radius:100px; font-size:12px; cursor:pointer; font-family:'Inter',sans-serif;">Sign Out 👋</button>
-        </div>
+        <!-- SIDEBAR OVERLAY (dark bg when open) -->
+        <div class="sidebar-overlay" id="sidebarOverlay" onclick="closeSidebar()"></div>
 
-        <div class="stats-banner">
-            <span id="streakDisplay">🔥 0-Day Streak!</span> <span class="separator">•</span> <span
-                id="crushedDisplay">🏆 You've crushed 0 tasks today!</span>
-        </div>
+        <!-- SIDEBAR -->
+        <div class="sidebar" id="sidebar">
 
-        <div class="stats-row">
-            <div class="stat-box">
-                <div class="stat-number" id="totalCount" style="color: #7c6cfc;">0</div>
-                <div class="stat-label">Total Tasks</div>
-            </div>
-            <div class="stat-box">
-                <div class="stat-number" id="highCount" style="color: #f06a6a;">0</div>
-                <div class="stat-label">High Priority</div>
-            </div>
-            <div class="stat-box">
-                <div class="stat-number" id="doneCount" style="color: #3ecf8e;">0</div>
-                <div class="stat-label">Completed</div>
-            </div>
-            <div class="stat-box">
-                <div class="stat-number" id="overdueCount" style="color: #f5c542;">0</div>
-                <div class="stat-label">Overdue</div>
-            </div>
-        </div>
-
-        <div class="chart-wrapper">
-            <div class="chart-container">
-                <canvas id="productivityChart"></canvas>
-            </div>
-        </div>
-
-        <div class="card gemini-card">
-            <div class="card-header">
-                <h2>✨ GEMINI ADVICE</h2>
-                <div class="header-dots">
-                    <span></span><span></span><span></span>
+            <!-- Profile Block -->
+            <div class="sidebar-profile">
+                <div class="sidebar-avatar" id="sidebarAvatar">?</div>
+                <div class="sidebar-user-info">
+                    <div class="sidebar-user-name" id="sidebarName">Loading...</div>
+                    <div class="sidebar-user-email" id="sidebarEmail">—</div>
                 </div>
             </div>
 
-            <div class="gemini-content">
-                <div class="gemini-response" id="insight">
-                    <p>📊 Avg completed task priority score: --</p>
-                </div>
-                <div class="suggestion-box" id="suggestion" style="display:none;">👉 Add tasks to see what to start with
+            <div class="sidebar-divider"></div>
+
+            <!-- Settings Button -->
+            <button class="sidebar-btn" onclick="openSettings(); closeSidebar();">
+                <span class="sb-icon">⚙️</span> Settings
+            </button>
+
+            <!-- Logout at bottom -->
+            <button class="sidebar-btn sidebar-logout" onclick="logoutUser()">
+                <span class="sb-icon">🚪</span> Sign Out
+            </button>
+
+        </div>
+
+        <!-- SETTINGS MODAL -->
+        <div class="modal-overlay" id="settingsModal">
+            <div class="modal-box">
+                <button class="modal-close" onclick="closeSettings()">✕</button>
+                <div class="modal-title">⚙️ Settings</div>
+
+                <!-- Profile Section -->
+                <div>
+                    <div class="modal-section-title">Profile</div>
+                    <div class="modal-profile-header">
+                        <div class="modal-avatar" id="modalAvatar">?</div>
+                        <div>
+                            <div class="modal-user-name" id="modalName">—</div>
+                            <div class="modal-user-email" id="modalEmail">—</div>
+                        </div>
+                    </div>
                 </div>
 
-                <div class="prompt-suggestions">
-                    <button class="prompt-chip" onclick="setPrompt('Ways to boost your productivity')">Ways to boost
-                        your productivity</button>
-                    <button class="prompt-chip" onclick="setPrompt('What should I focus on right now?')">What should I
-                        focus on right now?</button>
-                    <button class="prompt-chip" onclick="setPrompt('Is there anything I am missing?')">Is there anything
-                        I am missing?</button>
+                <!-- About Section -->
+                <div>
+                    <div class="modal-section-title">About Priorify</div>
+                    <div class="about-grid">
+                        <div class="about-item">
+                            <div class="about-item-icon">🔥</div>
+                            <div class="about-item-text">
+                                <strong>Firebase</strong>
+                                <span>Realtime database & authentication</span>
+                            </div>
+                        </div>
+                        <div class="about-item">
+                            <div class="about-item-icon">✨</div>
+                            <div class="about-item-text">
+                                <strong>Gemini AI</strong>
+                                <span>Smart task advice via Cloudflare Worker</span>
+                            </div>
+                        </div>
+                        <div class="about-item">
+                            <div class="about-item-icon">📊</div>
+                            <div class="about-item-text">
+                                <strong>Chart.js</strong>
+                                <span>7-day productivity trend visualization</span>
+                            </div>
+                        </div>
+                        <div class="about-item">
+                            <div class="about-item-icon">▲</div>
+                            <div class="about-item-text">
+                                <strong>Vercel</strong>
+                                <span>Deployed & hosted on Vercel</span>
+                            </div>
+                        </div>
+                        <div class="about-item">
+                            <div class="about-item-icon">🎨</div>
+                            <div class="about-item-text">
+                                <strong>Vanilla HTML/CSS/JS</strong>
+                                <span>No frameworks — pure and fast</span>
+                            </div>
+                        </div>
+                    </div>
                 </div>
 
-                <div class="chat-input-wrapper">
-                    <input type="text" id="geminiPrompt" placeholder="Ask anything about your tasks...">
-                    <button onclick="askGemini()" class="ask-btn">Ask 🪄</button>
-                </div>
+                <div class="app-version-tag">Priorify v1.0 · Made with ❤️</div>
             </div>
         </div>
 
-        <div class="card add-task-card">
-            <h2>➕ ADD NEW TASK</h2>
-            <div class="form-row flex-row">
-                <input id="task" placeholder="Task Name (e.g. Project Report)" class="flex-2">
-                <input id="deadline" type="datetime-local" class="flex-1">
-            </div>
-            <div class="form-row flex-row">
-                <select id="category" class="flex-1">
-                    <option value="🏠 Personal">🏠 Personal</option>
-                    <option value="💼 Work">💼 Work</option>
-                    <option value="🛒 Errands">🛒 Errands</option>
-                </select>
-                <select id="recurring" class="flex-1">
-                    <option value="None">🔁 No Repeat</option>
-                    <option value="Daily">🔁 Repeat Daily</option>
-                    <option value="Weekly">🔁 Repeat Weekly</option>
-                </select>
-            </div>
-            <div class="form-row flex-row">
-                <input id="impact" type="number" placeholder="Impact (1-5)" min="1" max="5" class="flex-1">
-                <input id="effort" type="number" placeholder="Effort (1-5)" min="1" max="5" class="flex-1">
-                <input id="progress" type="number" placeholder="Progress %" min="0" max="100" class="flex-1">
-            </div>
-            <button class="add-btn" onclick="addTask()">+ Add Task</button>
-        </div>
+        <div class="container">
 
-        <div class="card task-list-card">
-            <div class="card-header space-between">
-                <h2>📋 TASK LIST</h2>
-                <div class="filter-controls">
-                    <select onchange="filterTasks(this.value)" class="filter-select">
-                        <option value="all">All tasks</option>
-                        <option value="high">High Priority</option>
-                        <option value="done">Completed</option>
-                        <option value="overdue">Overdue</option>
+            <div class="header-section">
+                <div class="ai-badge">✨ AI POWERED</div>
+                <h1 class="logo-text">Priorify</h1>
+                <p class="subtitle">Stay organized, boost your productivity, and let the AI tell you what to focus on
+                    today
+                </p>
+                <button onclick="logoutUser()"
+                    style="margin-top:4px; background:transparent; border:1px solid #232233; color:#9ca3af; padding:7px 18px; border-radius:100px; font-size:12px; cursor:pointer; font-family:'Inter',sans-serif;">Sign
+                    Out 👋</button>
+            </div>
+
+            <div class="stats-banner">
+                <span id="streakDisplay">🔥 0-Day Streak!</span> <span class="separator">•</span> <span
+                    id="crushedDisplay">🏆 You've crushed 0 tasks today!</span>
+            </div>
+
+            <div class="stats-row">
+                <div class="stat-box">
+                    <div class="stat-number" id="totalCount" style="color: #7c6cfc;">0</div>
+                    <div class="stat-label">Total Tasks</div>
+                </div>
+                <div class="stat-box">
+                    <div class="stat-number" id="highCount" style="color: #f06a6a;">0</div>
+                    <div class="stat-label">High Priority</div>
+                </div>
+                <div class="stat-box">
+                    <div class="stat-number" id="doneCount" style="color: #3ecf8e;">0</div>
+                    <div class="stat-label">Completed</div>
+                </div>
+                <div class="stat-box">
+                    <div class="stat-number" id="overdueCount" style="color: #f5c542;">0</div>
+                    <div class="stat-label">Overdue</div>
+                </div>
+            </div>
+
+            <div class="chart-wrapper">
+                <div class="chart-container">
+                    <canvas id="productivityChart"></canvas>
+                </div>
+            </div>
+
+            <div class="card gemini-card">
+                <div class="card-header">
+                    <h2>✨ GEMINI ADVICE</h2>
+                    <div class="header-dots">
+                        <span></span><span></span><span></span>
+                    </div>
+                </div>
+
+                <div class="gemini-content">
+                    <div class="gemini-response" id="insight">
+                        <p>📊 Avg completed task priority score: --</p>
+                    </div>
+                    <div class="suggestion-box" id="suggestion" style="display:none;">👉 Add tasks to see what to start
+                        with
+                    </div>
+
+                    <div class="prompt-suggestions">
+                        <button class="prompt-chip" onclick="setPrompt('Ways to boost your productivity')">Ways to boost
+                            your productivity</button>
+                        <button class="prompt-chip" onclick="setPrompt('What should I focus on right now?')">What should
+                            I
+                            focus on right now?</button>
+                        <button class="prompt-chip" onclick="setPrompt('Is there anything I am missing?')">Is there
+                            anything
+                            I am missing?</button>
+                    </div>
+
+                    <div class="chat-input-wrapper">
+                        <input type="text" id="geminiPrompt" placeholder="Ask anything about your tasks...">
+                        <button onclick="askGemini()" class="ask-btn">Ask 🪄</button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card add-task-card">
+                <h2>➕ ADD NEW TASK</h2>
+                <div class="form-row flex-row">
+                    <input id="task" placeholder="Task Name (e.g. Project Report)" class="flex-2">
+                    <input id="deadline" type="datetime-local" class="flex-1">
+                </div>
+                <div class="form-row flex-row">
+                    <select id="category" class="flex-1">
                         <option value="🏠 Personal">🏠 Personal</option>
                         <option value="💼 Work">💼 Work</option>
                         <option value="🛒 Errands">🛒 Errands</option>
                     </select>
-                    <button class="export-btn" onclick="exportCSV()">⬇ Export CSV</button>
+                    <select id="recurring" class="flex-1">
+                        <option value="None">🔁 No Repeat</option>
+                        <option value="Daily">🔁 Repeat Daily</option>
+                        <option value="Weekly">🔁 Repeat Weekly</option>
+                    </select>
                 </div>
+                <div class="form-row flex-row">
+                    <input id="impact" type="number" placeholder="Impact (1-5)" min="1" max="5" class="flex-1">
+                    <input id="effort" type="number" placeholder="Effort (1-5)" min="1" max="5" class="flex-1">
+                    <input id="progress" type="number" placeholder="Progress %" min="0" max="100" class="flex-1">
+                </div>
+                <button class="add-btn" onclick="addTask()">+ Add Task</button>
             </div>
 
-            <ul id="taskList"></ul>
-        </div>
+            <div class="card task-list-card">
+                <div class="card-header space-between">
+                    <h2>📋 TASK LIST</h2>
+                    <div class="filter-controls">
+                        <select onchange="filterTasks(this.value)" class="filter-select">
+                            <option value="all">All tasks</option>
+                            <option value="high">High Priority</option>
+                            <option value="done">Completed</option>
+                            <option value="overdue">Overdue</option>
+                            <option value="🏠 Personal">🏠 Personal</option>
+                            <option value="💼 Work">💼 Work</option>
+                            <option value="🛒 Errands">🛒 Errands</option>
+                        </select>
+                        <button class="export-btn" onclick="exportCSV()">⬇ Export CSV</button>
+                    </div>
+                </div>
 
-    </div> <!-- end .container -->
-</div> <!-- end #appScreen -->
+                <ul id="taskList"></ul>
+            </div>
+
+        </div> <!-- end .container -->
+    </div> <!-- end #appScreen -->
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
@@ -214,6 +327,16 @@
                 document.getElementById("appScreen").style.display = "block";
                 // Reload tasks for this user
                 if (typeof window.loadUserTasks === "function") window.loadUserTasks();
+
+                // Fill sidebar profile on login
+                const email = user.email || "";
+                const initial = email.charAt(0).toUpperCase();
+                const sidebarAvatar = document.getElementById("sidebarAvatar");
+                const sidebarName = document.getElementById("sidebarName");
+                const sidebarEmail = document.getElementById("sidebarEmail");
+                if (sidebarAvatar) sidebarAvatar.innerText = initial;
+                if (sidebarName) sidebarName.innerText = email.split("@")[0];
+                if (sidebarEmail) sidebarEmail.innerText = email;
             } else {
                 window.currentUser = null;
                 document.getElementById("authScreen").style.display = "flex";
