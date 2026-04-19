@@ -9,19 +9,20 @@ let currentFilter = "all";
 let editingIndex = -1;
 let productivityChart;
 
-window.onload = function () {
+window.loadUserTasks = function () {
     if ("Notification" in window) Notification.requestPermission();
+    const uid = window.currentUser?.uid;
+    if (!uid) return;
 
-    window.fsGetDocs(window.fsCollection(window.db, "tasks"))
-        .then(snapshot => {
-            tasks = [];
-            snapshot.forEach(docSnap => tasks.push({ id: docSnap.id, ...docSnap.data() }));
-            tasks.sort((a, b) => (b.score || 0) - (a.score || 0));
-
-            displayTasks();
-            if (typeof updateChart === "function") updateChart();
-        })
-        .catch(err => console.error("Firebase Load Error:", err));
+    window.fsGetDocs(
+        window.fsQuery(window.fsCollection(window.db, "tasks"), window.fsWhere("uid", "==", uid))
+    ).then(snapshot => {
+        tasks = [];
+        snapshot.forEach(docSnap => tasks.push({ id: docSnap.id, ...docSnap.data() }));
+        tasks.sort((a, b) => (b.score || 0) - (a.score || 0));
+        displayTasks();
+        if (typeof updateChart === "function") updateChart();
+    }).catch(err => console.error("Firebase Load Error:", err));
 };
 
 setInterval(() => {
@@ -42,6 +43,9 @@ setInterval(() => {
     saveTasks();
 }, 60000);
 
+// ==========================================
+// 📊 STATS & STREAK MANAGEMENT
+// ==========================================
 function getTodayDate() {
     return new Date().toISOString().split('T')[0];
 }
@@ -88,6 +92,9 @@ function saveTasks() {
     localStorage.setItem("tasks", JSON.stringify(tasks));
 }
 
+// ==========================================
+// 🧠 CORE LOGIC & TASK MANAGEMENT
+// ==========================================
 function recalculateScore(task) {
     if (task.impact !== undefined && task.effort !== undefined) {
         let urgency = 1;
@@ -142,7 +149,7 @@ function addTask() {
         const newTask = { name, done: false, deadline, impact, effort, progress, category, recurring, subtasks: [], notified: false };
         recalculateScore(newTask);
 
-        window.fsAddDoc(window.fsCollection(window.db, "tasks"), newTask)
+        window.fsAddDoc(window.fsCollection(window.db, "tasks"), { ...newTask, uid: window.currentUser?.uid })
             .then(docRef => {
                 newTask.id = docRef.id;
                 tasks.push(newTask);
@@ -234,6 +241,9 @@ function deleteTask(index) {
     }
 }
 
+// ==========================================
+// 🔗 SUBTASKS LOGIC
+// ==========================================
 function toggleExpand(index) {
     const el = document.getElementById(`subtasks-${index}`);
     if (el) el.style.display = el.style.display === "none" ? "block" : "none";
@@ -272,6 +282,9 @@ function recalculateProgressFromSubtasks(index) {
     }, 10);
 }
 
+// ==========================================
+// 🎨 UI RENDERING
+// ==========================================
 function displayTasks() {
     tasks.forEach(t => { if (!t.done) recalculateScore(t); });
 
@@ -441,6 +454,9 @@ function updateChart() {
     }
 }
 
+// ==========================================
+// ⬇ UTILITIES
+// ==========================================
 function exportCSV() {
     const csv = ["Name,Score,Status,Category", ...tasks.map(t => `${t.name},${t.score},${t.done ? "Done" : "Pending"},${t.category || ""}`)].join("\n");
     const a = document.createElement("a");
@@ -449,6 +465,9 @@ function exportCSV() {
     a.click();
 }
 
+// ==========================================
+// 🤖 GEMINI AI INTEGRATION
+// ==========================================
 function setPrompt(text) {
     const el = document.getElementById("geminiPrompt");
     if (el) el.value = text;
@@ -494,6 +513,54 @@ async function getGeminiAdvice(customPrompt) {
         console.error("Cloudflare Worker Error:", error);
         insightElement.innerHTML = "<p>⚠️ Oops! Gemini is currently unavailable. Please check your connection.</p>";
     }
+}
+
+// ---- AUTH FUNCTIONS ----
+function showLogin() {
+    document.getElementById("registerNameField").style.display = "none";
+    document.getElementById("authSubmitBtn").innerText = "Sign In";
+    document.getElementById("loginTabBtn").style.background = "#7c6cfc";
+    document.getElementById("loginTabBtn").style.color = "#fff";
+    document.getElementById("registerTabBtn").style.background = "transparent";
+    document.getElementById("registerTabBtn").style.color = "#9ca3af";
+    window._authMode = "login";
+}
+
+function showRegister() {
+    document.getElementById("registerNameField").style.display = "block";
+    document.getElementById("authSubmitBtn").innerText = "Create Account";
+    document.getElementById("registerTabBtn").style.background = "#7c6cfc";
+    document.getElementById("registerTabBtn").style.color = "#fff";
+    document.getElementById("loginTabBtn").style.background = "transparent";
+    document.getElementById("loginTabBtn").style.color = "#9ca3af";
+    window._authMode = "register";
+}
+
+async function handleAuth() {
+    const email = document.getElementById("authEmail").value.trim();
+    const password = document.getElementById("authPassword").value.trim();
+    const errEl = document.getElementById("authError");
+    errEl.style.display = "none";
+
+    if (!email || !password) { errEl.innerText = "Please fill all fields."; errEl.style.display = "block"; return; }
+
+    try {
+        if (window._authMode === "register") {
+            await window.fsCreateUser(window.auth, email, password);
+        } else {
+            await window.fsSignIn(window.auth, email, password);
+        }
+        // onAuthStateChanged in index.html handles the rest
+    } catch (err) {
+        errEl.innerText = err.message.replace("Firebase: ", "");
+        errEl.style.display = "block";
+    }
+}
+
+async function logoutUser() {
+    await window.fsSignOut(window.auth);
+    tasks = [];
+    displayTasks();
 }
 
 document.addEventListener("DOMContentLoaded", () => {

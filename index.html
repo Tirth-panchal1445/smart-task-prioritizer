@@ -16,6 +16,31 @@
 
 <body>
 
+<!-- AUTH SCREEN -->
+<div id="authScreen" style="display:flex; flex-direction:column; align-items:center; justify-content:center; min-height:100vh; padding:20px;">
+    <h1 style="font-family:'Pacifico',cursive; font-size:48px; background:linear-gradient(135deg,#fff 10%,#a78bfa 100%); -webkit-background-clip:text; -webkit-text-fill-color:transparent; margin-bottom:8px;">Priorify</h1>
+    <p style="color:#9ca3af; margin-bottom:30px; font-size:14px;">Sign in to manage your tasks</p>
+
+    <div style="background:#100f15; border:1px solid #232233; border-radius:16px; padding:28px; width:100%; max-width:400px; display:flex; flex-direction:column; gap:14px;">
+        <div id="authToggleBtns" style="display:flex; gap:8px; margin-bottom:4px;">
+            <button onclick="showLogin()" id="loginTabBtn" style="flex:1; padding:10px; border-radius:8px; border:none; background:#7c6cfc; color:#fff; font-weight:600; cursor:pointer;">Login</button>
+            <button onclick="showRegister()" id="registerTabBtn" style="flex:1; padding:10px; border-radius:8px; border:1px solid #232233; background:transparent; color:#9ca3af; font-weight:600; cursor:pointer;">Register</button>
+        </div>
+
+        <div id="registerNameField" style="display:none;">
+            <input id="authName" type="text" placeholder="Your Name" style="width:100%; padding:12px 14px; background:#16151f; border:1px solid #232233; border-radius:10px; color:#fff; font-size:14px; font-family:'Inter',sans-serif; outline:none;">
+        </div>
+        <input id="authEmail" type="email" placeholder="Email address" style="padding:12px 14px; background:#16151f; border:1px solid #232233; border-radius:10px; color:#fff; font-size:14px; font-family:'Inter',sans-serif; outline:none; width:100%;">
+        <input id="authPassword" type="password" placeholder="Password" style="padding:12px 14px; background:#16151f; border:1px solid #232233; border-radius:10px; color:#fff; font-size:14px; font-family:'Inter',sans-serif; outline:none; width:100%;">
+
+        <button id="authSubmitBtn" onclick="handleAuth()" style="padding:13px; background:#7c6cfc; color:#fff; border:none; border-radius:10px; font-size:14px; font-weight:600; cursor:pointer; font-family:'Inter',sans-serif;">Sign In</button>
+        <p id="authError" style="color:#ef4444; font-size:13px; text-align:center; display:none;"></p>
+    </div>
+</div>
+
+<!-- MAIN APP -->
+<div id="appScreen" style="display:none;">
+
     <div class="container">
 
         <div class="header-section">
@@ -23,6 +48,7 @@
             <h1 class="logo-text">Priorify</h1>
             <p class="subtitle">Stay organized, boost your productivity, and let the AI tell you what to focus on today
             </p>
+            <button onclick="logoutUser()" style="margin-top:4px; background:transparent; border:1px solid #232233; color:#9ca3af; padding:7px 18px; border-radius:100px; font-size:12px; cursor:pointer; font-family:'Inter',sans-serif;">Sign Out 👋</button>
         </div>
 
         <div class="stats-banner">
@@ -132,18 +158,23 @@
             <ul id="taskList"></ul>
         </div>
 
-    </div>
+    </div> <!-- end .container -->
+</div> <!-- end #appScreen -->
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
         import {
             getFirestore, collection, getDocs, addDoc,
-            deleteDoc, updateDoc, doc, query, orderBy
+            deleteDoc, updateDoc, doc, query, orderBy, where
         } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+        import {
+            getAuth, createUserWithEmailAndPassword,
+            signInWithEmailAndPassword, signOut, onAuthStateChanged
+        } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
 
         // Your exact config from the screenshot
         const firebaseConfig = {
-            apiKey: "AIzaSyD0zdlpJivcfCARaC8RxG8-Bc17RR4bDWE",
+            apiKey: "AIzaSyDOzdlpJivcfCaRAc8RxG8-Bc17RR4bDWE",
             authDomain: "smart-task-prioritizer-fcfd5.firebaseapp.com",
             projectId: "smart-task-prioritizer-fcfd5",
             storageBucket: "smart-task-prioritizer-fcfd5.firebasestorage.app",
@@ -165,6 +196,30 @@
         window.fsDoc = doc;
         window.fsQuery = query;
         window.fsOrderBy = orderBy;
+
+        const auth = getAuth(app);
+        window.auth = auth;
+        window.fsCreateUser = createUserWithEmailAndPassword;
+        window.fsSignIn = signInWithEmailAndPassword;
+        window.fsSignOut = signOut;
+        window.fsWhere = where;
+
+        window.fsOnAuthStateChanged = onAuthStateChanged;
+
+        // Auth state listener - controls showing app vs login
+        onAuthStateChanged(auth, (user) => {
+            if (user) {
+                window.currentUser = user;
+                document.getElementById("authScreen").style.display = "none";
+                document.getElementById("appScreen").style.display = "block";
+                // Reload tasks for this user
+                if (typeof window.loadUserTasks === "function") window.loadUserTasks();
+            } else {
+                window.currentUser = null;
+                document.getElementById("authScreen").style.display = "flex";
+                document.getElementById("appScreen").style.display = "none";
+            }
+        });
 
         // Load your logic script after Firebase is ready
         const s = document.createElement('script');
