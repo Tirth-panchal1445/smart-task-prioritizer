@@ -251,9 +251,12 @@
                     </select>
                 </div>
                 <div class="form-row flex-row">
-                    <input id="impact" type="number" placeholder="Impact (1-5)" min="1" max="5" class="flex-1">
-                    <input id="effort" type="number" placeholder="Effort (1-5)" min="1" max="5" class="flex-1">
-                    <input id="progress" type="number" placeholder="Progress %" min="0" max="100" class="flex-1">
+                    <input id="impact" type="number" placeholder="Impact (1-5)" min="1" max="5" class="flex-1"
+                        oninput="if(this.value !== '') { if(this.value > 5) this.value = 5; if(this.value < 1) this.value = 1; }">
+                    <input id="effort" type="number" placeholder="Effort (1-5)" min="1" max="5" class="flex-1"
+                        oninput="if(this.value !== '') { if(this.value > 5) this.value = 5; if(this.value < 1) this.value = 1; }">
+                    <input id="progress" type="number" placeholder="Progress %" min="0" max="100" class="flex-1"
+                        oninput="if(this.value !== '') { if(this.value > 100) this.value = 100; if(this.value < 0) this.value = 0; }">
                 </div>
                 <button class="add-btn" onclick="addTask()">+ Add Task</button>
             </div>
